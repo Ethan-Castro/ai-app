@@ -1,6 +1,5 @@
-from google import genai
-from google.genai import types
-import base64
+import google.generativeai as genai
+from google.generativeai import types
 import streamlit as st
 
 # --- Page Configuration ---
@@ -61,7 +60,14 @@ if prompt := st.chat_input("What is your question?"):
         st.markdown(prompt)
 
     # Prepare content for the model
-    contents = [{"role": "user", "parts": [prompt]}]
+    contents = [
+      types.Content(
+          role="user",
+          parts=[
+              types.Part(text=prompt)
+          ]
+      )
+    ]
 
     # Generate the response from the model
     try:
@@ -105,3 +111,4 @@ st.markdown("""
 *   **Error Handling:** Basic error handling is included, but you might want to add more robust error checks for production environments.
 *   **Customization:** You can customize the chatbot's behavior by adjusting the parameters in `generate_content_config` (e.g., temperature, safety settings).
 """)
+Use code with caution.
