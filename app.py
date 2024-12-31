@@ -1,6 +1,6 @@
-import google.generativeai as genai
-from google.generativeai import types
-import streamlit as st
+from google import genai
+from google.genai import types
+import base64
 
 # --- Page Configuration ---
 st.set_page_config(
