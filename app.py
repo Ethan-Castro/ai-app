@@ -203,39 +203,3 @@ if st.session_state.user_queries:
         # Display the bot's response
         with st.chat_message("assistant"):
             st.markdown(bot_msg)
-
-
-########################################
-# 9) Helpful Notes and Tips
-########################################
-
-st.markdown("""
----
-
-**Application Notes:**
-
-1. **Authentication & Credentials**  
-   - This sample code expects that your environment is already authenticated with Google Cloud.  
-   - If you're running locally, ensure `GOOGLE_APPLICATION_CREDENTIALS` is set to the path of your JSON key file.  
-   - If you're running on a GCP environment (e.g., Cloud Run, Vertex AI), credentials might already be provided.
-
-2. **Vertex AI Datastore**  
-   - The code references a Vertex AI Search datastore at  
-     `projects/alisons-apps/locations/global/collections/default_collection/dataStores/course_1735593026699`.  
-   - Ensure this datastore exists and is accessible to your service account.
-
-3. **Model**  
-   - Using `gemini-2.0-flash-exp` for demonstration. Make sure this model is available and open for your usage in your region and GCP project.
-
-4. **Adjusting Parameters**  
-   - Feel free to tweak `temperature`, `top_p`, `max_output_tokens`, and `safety_settings` to suit your desired output style and length.
-
-5. **Streamlit Chat Components**  
-   - We used `st.chat_input` and `st.chat_message`, which are newer Streamlit features (since Streamlit 1.22+).  
-   - If your Streamlit version is older, you can replace `st.chat_input` with `st.text_input` and display messages differently (e.g., with `st.write` or `st.markdown`).
-
----
-**How to Run This App Locally:**
-1. **Install Dependencies**  
-   ```bash
-   pip install streamlit google-generativeai
