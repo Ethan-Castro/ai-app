@@ -1,12 +1,12 @@
 google-genai
 streamlit==1.22.0
-streamlit_chat==0.0.2.2
-matplotlib==3.6.3
+streamlit-chat==0.0.2.2
+matplotlib>=3.7.0
 matplotlib-inline==0.1.6
-numpy==1.24.1
+numpy>=1.25.0  # Compatible with Python 3.12
 openai==1.9.0
 pandas==1.5.2
 plotly==5.12.0
 scikit-learn==1.2.0
 scipy==1.10.0
-requests==2.30.0
+requests>=2.30.0
