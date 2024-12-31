@@ -10,14 +10,21 @@ location = "us-central1"
 model_name = "gemini-2.0-flash-exp"
 
 def get_genai_client():
-    return genai.Client(
-        vertexai=True,
-        project=project_id,
-        location=location
-    )
+    try:
+        return genai.Client(
+            vertexai=True,
+            project=project_id,
+            location=location
+        )
+    except Exception as e:
+        st.error("Failed to initialize GenAI client: " + str(e))
+        return None
 
 def generate_response(user_input):
     client = get_genai_client()
+    if not client:
+        return "Error initializing the GenAI client. Please check your configuration."
+
     contents = [
         types.Content(
             role="user",
@@ -38,14 +45,16 @@ def generate_response(user_input):
         ],
     )
 
-    response_chunks = client.models.generate_content_stream(
-        model=model_name,
-        contents=contents,
-        config=generate_content_config
-    )
-
-    response = "".join(chunk.text for chunk in response_chunks)
-    return response
+    try:
+        response_chunks = client.models.generate_content_stream(
+            model=model_name,
+            contents=contents,
+            config=generate_content_config
+        )
+        response = "".join(chunk.text for chunk in response_chunks)
+        return response
+    except Exception as e:
+        return "An error occurred while generating the response: " + str(e)
 
 # Streamlit UI
 st.set_page_config(page_title="Bakersfield Adult School ChatBot", page_icon="🤖", layout="wide")
@@ -63,8 +72,11 @@ message("Thank you for your interest in Bakersfield Adult School! What would you
 if st.session_state.prompt:
     user_query = st.session_state.prompt
     user_response = generate_response(user_query)
-    message(user_query, is_user=True, avatar_style="adventurer", key="user_message")
-    message(user_response, key="bot_response")
+    if "Error" in user_response:
+        st.error(user_response)
+    else:
+        message(user_query, is_user=True, avatar_style="adventurer", key="user_message")
+        message(user_response, key="bot_response")
 
 st.text_input(key="input",
               on_change=user_prompt_submit,
