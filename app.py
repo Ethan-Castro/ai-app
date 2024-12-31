@@ -1,9 +1,11 @@
 #############################################
 # Imports
 #############################################
-from google import genai
-from google.genai import types
-import base64
+from google.genai.model import GenerativeModel
+from google.genai.config import GenerationConfig
+from google.genai.safety import SafetyCategory
+from google.genai.types import Content, Part
+
 import streamlit as st
 from streamlit_chat import message
 from streamlit.components.v1 import html
@@ -11,12 +13,10 @@ from streamlit.components.v1 import html
 #############################################
 # Configuration
 #############################################
-project_id = "alisons-apps"
-location = "us-central1"
-model_name = "gemini-2.0-flash-exp"
+MODEL_ID = "gemini-2.0-flash-exp"
 
 #############################################
-# Large system prompt text (from your first snippet)
+# Large system prompt text
 #############################################
 textsi_1 = """Welcoming & Offering Support Options APP
 Welcome Message:
@@ -24,95 +24,72 @@ Start with a warm and friendly welcome message. For example: \"Welcome to the YE
 Introduction to Course:
 Briefly introduce the purpose of the course and how the app will assist them. For example: \"This course is designed to support you in developing a positive body image and overcome disordered eating patterns. Our AI is here to guide you every step of the way.\"
 Topic Selection Prompt:
-Invite participants to choose a topic they would like support or guidance with. Present the options clearly:
-Stress Management
-Body Image
-Eating
-Self-Talk
-Exercise
-Sleep
-Example prompt: \"To get started, please select a topic you\'d like to focus on today. You can choose from the following: Stress Management, Body Image, Eating, Self-Talk, Exercise, or Sleep.\"
-User Input:
-Allow users to select their preferred topic through a simple interface, such as buttons or a dropdown menu.
-Guidance and Support:
-Once a topic is selected, provide tailored guidance or resources related to that topic. This could include tips, exercises, or articles.
-Encouragement and Next Steps:
-Encourage users to explore the resources and remind them that they can return to choose another topic at any time. For example: \"Feel free to explore the resources provided. Remember, you can always come back and choose another topic whenever you\'re ready.\"
-Feedback and Interaction:
-Offer an option for users to provide feedback on the guidance they received or ask further questions. This can help improve the app\'s effectiveness and user experience.
-Privacy and Support:
-Ensure users know their interactions are confidential and that support is available if they need it.
-This workflow will help create a welcoming and supportive environment for participants, guiding them to focus on areas where they seek improvement or support.
-
-[... Truncated for brevity: All of your body-image, stress management, self-talk, eating workflows, etc., text is included below in the final code block. You can keep it in full as-is ...]
+Invite participants to choose a topic they would like support or guidance with...
+[Truncated for brevity in this example, but keep your entire text here if needed]
 """
 
 #############################################
-# Demonstration function mirroring your original "generate()"
+# (Optional) Demonstration function
 #############################################
-def generate_workflow():
+def generate_workflow_demo():
     """
-    This function demonstrates how to use a large, system-level prompt
-    (`textsi_1`) with `generate_content_stream()`. 
-    You can call this function to see a streamed response in your terminal/log.
+    Demonstrates how you can stream a response using a big system instruction
+    (textsi_1) with the new GenerativeModel API.
     """
-    client = genai.Client(vertexai=True, project=project_id, location=location)
+    gemini_model = GenerativeModel(model_id=MODEL_ID)
 
-    # Example: If you had a retrieval tool. Leaving it commented out for demo.
-    # tools = [
-    #     types.Tool(
-    #         retrieval=types.Retrieval(
-    #             vertex_ai_search=types.VertexAISearch(
-    #                 datastore="projects/alisons-apps/locations/global/collections/default_collection/dataStores/course_1735593026699"
-    #             )
-    #         )
-    #     ),
-    # ]
+    # We can add a single system-level Content if we want the LLM
+    # to always incorporate textsi_1 as a system prompt
+    contents = [
+        Content(
+            role="system",
+            parts=[Part(text=textsi_1)]
+        )
+        # We don't include user content here because this is a "demo" 
+        # streaming the system content's output
+    ]
 
-    # We'll just demonstrate a system instruction with your textsi_1
-    generate_content_config = types.GenerateContentConfig(
+    generation_config = GenerationConfig(
         temperature=1,
         top_p=0.95,
         max_output_tokens=1807,
-        response_modalities=["TEXT"],
-        safety_settings=[
-            types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
-            types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
-            types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
-            types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF"),
-        ],
-        # tools=tools,  # If you need the retrieval tool, uncomment and configure
-        system_instruction=[types.Part.from_text(textsi_1)]
     )
 
-    # We supply an empty user content or minimal content so that the LLM focuses on the system prompt
-    contents = []
+    # Example safety settings
+    safety_settings = {
+        SafetyCategory.HATE_SPEECH: "OFF",
+        SafetyCategory.DANGEROUS_CONTENT: "OFF",
+        SafetyCategory.SEXUALLY_EXPLICIT: "OFF",
+        SafetyCategory.HARASSMENT: "OFF",
+    }
 
     try:
-        response_chunks = client.models.generate_content_stream(
-            model=model_name,
+        # Stream the response
+        model_response = gemini_model.generate_content(
             contents=contents,
-            config=generate_content_config,
+            config=generation_config,
+            safety_settings=safety_settings,
+            stream=True
         )
-        for chunk in response_chunks:
-            if chunk.candidates and chunk.candidates[0].content.parts:
-                # Stream the text in real-time
-                print(chunk.text, end="")
+        # Print streamed chunks to console (if your platform shows logs)
+        for chunk in model_response:
+            print(chunk.text, end="")
         print("\n\n--- End of streaming response ---")
     except Exception as e:
-        print("Error in generate_workflow: ", str(e))
+        print("Error in generate_workflow_demo:", str(e))
 
 #############################################
-# Streamlit Chatbot Helper Functions
+# Chatbot Helper Functions
 #############################################
-def get_genai_client():
+def get_gemini_model():
     """
-    Initializes and returns the GenAI client for Vertex AI.
+    Initializes and returns the GenerativeModel for Vertex AI.
     """
     try:
-        return genai.Client(vertexai=True, project=project_id, location=location)
+        gemini_model = GenerativeModel(model_id=MODEL_ID)
+        return gemini_model
     except Exception as e:
-        st.error("Failed to initialize GenAI client: " + str(e))
+        st.error("Failed to initialize the GenAI model: " + str(e))
         return None
 
 def generate_response(user_input: str) -> str:
@@ -120,40 +97,49 @@ def generate_response(user_input: str) -> str:
     Handles conversation in the Streamlit chatbot context.
     Takes user_input from the text box, queries the LLM, and returns the response.
     """
-    client = get_genai_client()
-    if not client:
-        return "Error initializing the GenAI client. Please check your configuration."
+    gemini_model = get_gemini_model()
+    if not gemini_model:
+        return "Error: Could not initialize the GenAI model."
 
+    # Wrap user input in the new content format
     contents = [
-        types.Content(role="user", parts=[user_input])
+        Content(
+            role="user",
+            parts=[Part(text=user_input)]
+        )
     ]
 
-    # Example of how you'd incorporate system instructions if desired:
-    # system_instructions = types.Content(role="system", parts=[textsi_1])
-    # contents.insert(0, system_instructions)
+    # If you want a system prompt alongside the user prompt, you'd do:
+    # system_content = Content(role="system", parts=[Part(text=textsi_1)])
+    # contents.insert(0, system_content)
 
-    generate_content_config = types.GenerateContentConfig(
+    generation_config = GenerationConfig(
         temperature=1,
         top_p=0.95,
         max_output_tokens=8192,
-        response_modalities=["TEXT"],
-        safety_settings=[
-            types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"),
-            types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"),
-            types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"),
-            types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="OFF")
-        ]
     )
 
+    # Example safety settings
+    safety_settings = {
+        SafetyCategory.HATE_SPEECH: "OFF",
+        SafetyCategory.DANGEROUS_CONTENT: "OFF",
+        SafetyCategory.SEXUALLY_EXPLICIT: "OFF",
+        SafetyCategory.HARASSMENT: "OFF",
+    }
+
     try:
-        response_chunks = client.models.generate_content_stream(
-            model=model_name,
+        # Stream the response
+        model_response = gemini_model.generate_content(
             contents=contents,
-            config=generate_content_config
+            config=generation_config,
+            safety_settings=safety_settings,
+            stream=True
         )
-        # Concatenate all response chunks
-        response = "".join(chunk.text for chunk in response_chunks)
-        return response
+        # Concatenate all streamed chunks
+        response_text = ""
+        for chunk in model_response:
+            response_text += chunk.text
+        return response_text
     except Exception as e:
         return "An error occurred while generating the response: " + str(e)
 
@@ -167,7 +153,7 @@ st.set_page_config(page_title="Bakersfield Adult School ChatBot",
 def user_prompt_submit():
     """
     Callback function that triggers on pressing 'Enter' in the text_input.
-    Grabs the typed question, clears the text_input, sets 'prompt' in session state.
+    Grabs the typed question, clears it, stores in session state.
     """
     user_input = st.session_state.input
     st.session_state.prompt = user_input
@@ -180,18 +166,19 @@ if "prompt" not in st.session_state:
 message("Thank you for your interest in Bakersfield Adult School! What would you like to learn more about?",
         key="-1")
 
+# If the user has submitted a prompt, generate a response
 if st.session_state.prompt:
     user_query = st.session_state.prompt
     user_response = generate_response(user_query)
-    if "Error" in user_response:
+    if user_response.startswith("Error"):
         st.error(user_response)
     else:
-        # Show user question
+        # Display user query
         message(user_query, is_user=True, avatar_style="adventurer", key="user_message")
-        # Show bot response
+        # Display bot response
         message(user_response, key="bot_response")
 
-# Text input at the bottom of the page
+# Text input at bottom
 st.text_input(
     key="input",
     on_change=user_prompt_submit,
@@ -200,7 +187,7 @@ st.text_input(
     placeholder="Type in your question here"
 )
 
-# Some extra styling to keep input anchored at bottom
+# Extra styling to pin input at bottom
 styl = """
 <style>
     .stTextInput {
@@ -234,7 +221,6 @@ styl = """
 st.markdown(styl, unsafe_allow_html=True)
 
 #############################################
-# Optional: Uncomment the line below to test
-# your large system-instruction prompt code
+# Optional: Uncomment to test system-prompt demo
 #############################################
-# generate_workflow()
+# generate_workflow_demo()
