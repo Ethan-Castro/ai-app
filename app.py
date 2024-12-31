@@ -18,8 +18,7 @@ from vertexai.preview.generative_models import (
 PROJECT_ID = "alisons-apps"  # Replace with your actual project ID
 LOCATION = "us-central1"     # Vertex AI location
 DATA_STORE_ID = (
-    "projects/alisons-apps/locations/global/collections/default_collection"
-    "/dataStores/course_1735593026699"
+    "course_1735593026699"
 )
 
 # Initialize Vertex AI
