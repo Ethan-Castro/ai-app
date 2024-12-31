@@ -111,4 +111,3 @@ st.markdown("""
 *   **Error Handling:** Basic error handling is included, but you might want to add more robust error checks for production environments.
 *   **Customization:** You can customize the chatbot's behavior by adjusting the parameters in `generate_content_config` (e.g., temperature, safety settings).
 """)
-Use code with caution.
